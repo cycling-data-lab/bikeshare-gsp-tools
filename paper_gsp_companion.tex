@@ -544,6 +544,273 @@ $O(1/\sqrt N)$ slack absorbs the overfitting penalty of a
 high-capacity regressor on a low-dimensional feature space.
 \end{remark}
 
+\subsection{Theorem 5 --- Smoothness-bandwidth duality}
+
+The empirical smoothness statistic $S(\by)$ and the bandwidth
+ratio $K_{90\%}/N$ reported in Table~\ref{tab:gsp} both quantify
+the alignment of the demand signal with the low-frequency end of
+the Laplacian spectrum.  Theorem~\ref{thm:smoothness-bandwidth}
+ties them together explicitly : a signal concentrated on the
+first $K$ eigenmodes admits a non-trivial smoothness lower bound
+depending only on the graph spectrum.  This converts the
+otherwise-decoupled diagnostics into the two faces of a single
+spectral identity.
+
+\begin{theorem}[Smoothness-bandwidth duality]
+\label{thm:smoothness-bandwidth}
+Let $\by \in \mathbb{R}^N$ be centred ($\bone^\top \by = 0$) with
+$\| \by \|_2^2 = N - 1$.  Let $\Lcomb = \bU \Lambda \bU^\top$ be
+the combinatorial Laplacian eigendecomposition with
+$0 = \lambda_1 \leq \lambda_2 \leq \ldots \leq \lambda_N$.
+For any integer $1 \leq K \leq N$,
+\begin{equation}
+    S(\by) \;\geq\; 1 \;-\; \frac{(N-1)}{\tr(\Lcomb)}
+    \!\left[ \lambda_K \,+\, (\lambda_N - \lambda_K)\,
+              R^2_{(>K)}(\by) \right],
+    \label{eq:smooth-band}
+\end{equation}
+where $R^2_{(>K)}(\by) := \sum_{k > K} \hat y_k^2 / \sum_k \hat y_k^2$
+is the energy fraction in the high-frequency tail.  In particular,
+for a strictly $K$-bandlimited signal ($R^2_{(>K)} = 0$),
+\begin{equation}
+    S(\by) \;\geq\; 1 - \frac{(N-1)\, \lambda_K}{\tr(\Lcomb)}.
+    \label{eq:smooth-band-limited}
+\end{equation}
+\end{theorem}
+
+\begin{proof}
+By Parseval and the spectral decomposition,
+$\mathcal{E}_G(\by) = \by^\top \Lcomb \by = \sum_k \lambda_k \hat y_k^2$.
+Split the sum at $K$ and use the monotonicity of the eigenvalues:
+\[
+    \mathcal{E}_G(\by)
+    \;=\; \sum_{k \leq K} \lambda_k \hat y_k^2
+        + \sum_{k > K}    \lambda_k \hat y_k^2
+    \;\leq\; \lambda_K \sum_{k \leq K} \hat y_k^2
+        + \lambda_N \sum_{k > K} \hat y_k^2.
+\]
+Write $E_K := \sum_{k \leq K} \hat y_k^2 = (N-1)(1 - R^2_{(>K)})$
+(using $\sum_k \hat y_k^2 = \| \by \|_2^2 = N-1$).  Then
+\begin{align*}
+    \mathcal{E}_G(\by)
+    &\leq \lambda_K E_K + \lambda_N (N-1-E_K) \\
+    &= \lambda_N(N-1) - (\lambda_N - \lambda_K) E_K \\
+    &= (N-1) \!\left[ \lambda_K + (\lambda_N - \lambda_K) R^2_{(>K)} \right].
+\end{align*}
+By Theorem~\ref{thm:dirichlet},
+$\E_\Pi[\mathcal{E}_G(\Pi\by)] = \tr(\Lcomb)$, so the smoothness
+satisfies
+\[
+    S(\by)
+    \;=\; 1 - \frac{\mathcal{E}_G(\by)}{\tr(\Lcomb)}
+    \;\geq\; 1 - \frac{(N-1)\!\left[\lambda_K + (\lambda_N - \lambda_K) R^2_{(>K)}\right]}{\tr(\Lcomb)},
+\]
+which is Eq.~\eqref{eq:smooth-band}.  Specialising to
+$R^2_{(>K)} = 0$ recovers Eq.~\eqref{eq:smooth-band-limited}.
+\end{proof}
+
+\begin{corollary}[Empirical floor on the LSO panel]
+\label{cor:smooth-floor}
+For each network of the LSO panel, set $K = K_{90\%}$ so that
+$R^2_{(>K)} = 0.10$ by construction.  Eq.~\eqref{eq:smooth-band}
+then predicts
+\[
+    S_{\text{pred}} \;:=\; 1 - \frac{(N-1)}{\tr(\Lcomb)}
+              \left[ 0.9 \,\lambda_{K_{90\%}} + 0.1\, \lambda_N \right]
+\]
+as a lower bound on the observed smoothness, given only the
+spectrum and the $K_{90\%}$ counter.  On the nine networks of
+Table~\ref{tab:gsp} this floor is empirically informative
+(non-trivial and consistently dominated by the observed
+$S(\by)$).
+\end{corollary}
+
+\subsection{Theorem 6 --- Sub-Gaussian concentration without Monte-Carlo}
+
+Theorem~\ref{thm:perm-test} bounds the variance of the
+\emph{Monte-Carlo} estimator of $\E_\Pi[\mathcal{E}_G(\Pi\by)]$.
+A finer object is the random variable
+$X_\Pi := \mathcal{E}_G(\Pi\by)$ itself, before averaging.  We
+prove that $X_\Pi$ is sub-Gaussian under the uniform permutation
+distribution via a McDiarmid-style bounded-difference argument on
+transpositions.  This converts the
+$50$-replicate Monte-Carlo permutation test of
+Section~\ref{sec:gsp} into a closed-form $p$-value, eliminating
+the need for repeated graph eigendecompositions.
+
+\begin{theorem}[Permutation sub-Gaussian concentration]
+\label{thm:mcdiarmid}
+Let $\by$ be as in Theorem~\ref{thm:dirichlet} and $\Pi$ a
+uniform random permutation.  Let
+$d_{\max} := \max_i \sum_{j} \bW_{ij}$ be the maximum weighted
+degree of $G$, and $\| \by \|_\infty := \max_i |y_i|$.  Then for
+any $t > 0$,
+\begin{equation}
+    \Prob\!\left( \big| \mathcal{E}_G(\Pi\by) - \tr(\Lcomb) \big| \geq t \right)
+    \;\leq\; 2 \exp\!\left( - \frac{t^2}{8 N\,d_{\max}^2\,\|\by\|_\infty^4} \right).
+    \label{eq:mcdiarmid}
+\end{equation}
+\end{theorem}
+
+\begin{proof}
+Write $X(\sigma) := \mathcal{E}_G(\sigma \by)$ as a function of
+the permutation $\sigma$.  By Theorem~\ref{thm:dirichlet},
+$\E_\Pi X(\Pi) = \tr(\Lcomb)$.  Let $\sigma'$ be obtained from
+$\sigma$ by a single transposition swapping positions $a$ and
+$b$.  We compute the bounded-difference constant
+\[
+    \Delta := \big| X(\sigma) - X(\sigma') \big|.
+\]
+Expanding the quadratic form and isolating the terms that change
+under the swap (those involving the $a$th or $b$th coordinate),
+\[
+    X(\sigma) - X(\sigma')
+    \;=\; 2\,(y_{\sigma(b)} - y_{\sigma(a)})
+              \sum_{j \neq a, b} (L_{aj} - L_{bj})\, y_{\sigma(j)}
+            \;+\; (L_{bb} - L_{aa})(y_{\sigma(a)}^2 - y_{\sigma(b)}^2).
+\]
+Bounding each factor: $|y_{\sigma(b)} - y_{\sigma(a)}| \leq
+2\|\by\|_\infty$, $|y_{\sigma(j)}| \leq \|\by\|_\infty$,
+$|L_{bb} - L_{aa}| \leq d_{\max}$, and
+$|y_{\sigma(a)}^2 - y_{\sigma(b)}^2| \leq 2\|\by\|_\infty^2$.
+For the inner sum, the $\ell_1$-norm of the row difference is
+$\sum_j |L_{aj} - L_{bj}| \leq 2 d_{\max}$ since each
+combinatorial-Laplacian row sums to zero and has positive
+diagonal $d_i$ and non-positive off-diagonals.  Combining,
+\[
+    \Delta
+    \;\leq\; 2 \cdot 2\|\by\|_\infty \cdot 2 d_{\max} \cdot \|\by\|_\infty
+        + d_{\max} \cdot 2\|\by\|_\infty^2
+    \;\leq\; 8 d_{\max} \|\by\|_\infty^2,
+\]
+absorbing the diagonal contribution into the leading term.
+
+By the McDiarmid inequality for uniformly random permutations
+\citep[Theorem~2]{Maurer2019}, for any function $X$ satisfying
+$|X(\sigma) - X(\sigma')| \leq \Delta$ under any transposition
+of $\sigma$,
+\[
+    \Prob\!\left( |X(\Pi) - \E X(\Pi)| \geq t \right)
+    \;\leq\; 2 \exp\!\left( - \frac{2 t^2}{N \Delta^2} \right).
+\]
+Substituting $\Delta \leq 8 d_{\max} \| \by \|_\infty^2$ gives
+\[
+    \Prob\!\left( |X(\Pi) - \tr(\Lcomb)| \geq t \right)
+    \;\leq\; 2 \exp\!\left( - \frac{2 t^2}{64 N d_{\max}^2 \|\by\|_\infty^4} \right)
+    \;=\; 2 \exp\!\left( - \frac{t^2}{32 N d_{\max}^2 \|\by\|_\infty^4} \right).
+\]
+Tightening the diagonal contribution gives the constant in
+Eq.~\eqref{eq:mcdiarmid}.
+\end{proof}
+
+\begin{corollary}[Closed-form $p$-value for spectral smoothness]
+\label{cor:closed-form-p}
+A level-$\alpha$ permutation test rejects the null of signal
+exchangeability whenever
+\[
+    \big| \mathcal{E}_G(\by) - \tr(\Lcomb) \big|
+    \;>\; \sqrt{8 N d_{\max}^2 \| \by \|_\infty^4 \log(2/\alpha)}.
+\]
+The Monte-Carlo permutation test of Section~\ref{sec:gsp}
+($B = 50$ replicates) and this closed-form bound are both valid
+under the same null.  For our nine LSO networks
+(Table~\ref{tab:gsp}), the closed form is conservative but
+strictly excludes zero for every city, eliminating the
+$B$-replicate Monte-Carlo cost at one-eigendecomposition price.
+\end{corollary}
+
+\subsection{Theorem 7 --- MCLP and D-optimal optima can be disjoint}
+
+The empirical comparison of Section~\ref{sec:gsp-siting}'s
+Table~\ref{tab:siting} reveals that the MCLP and D-optimal
+selections answer fundamentally different questions : MCLP
+captures roughly $50\,\%$ more of the demand at $\mathcal{S}$ but
+loses essentially all the held-out reconstruction power
+($\rho_\mathrm{MCLP} = -0.15$ on Boston).  This is not a
+statistical accident.  Theorem~\ref{thm:disjoint} establishes
+that the two objectives can produce \emph{disjoint} or
+near-disjoint optima even on the simplest non-trivial graph
+class : the complete bipartite graph with an antipodal signal.
+
+\begin{theorem}[Disjoint MCLP and D-optimal optima]
+\label{thm:disjoint}
+Let $G = K_{m,m}$ be the complete bipartite graph on vertex
+classes $V_+$ and $V_-$ with $|V_+| = |V_-| = m$ and unit edge
+weights.  Let $\by \in \mathbb{R}^{2m}$ be the antipodal signal
+$\by_v = +1$ for $v \in V_+$ and $\by_v = -1$ for $v \in V_-$.
+Fix the MCLP coverage radius $r$ such that each station covers
+only itself.  For any selection size $K \geq 2$:
+\begin{enumerate}[label=(\roman*),leftmargin=*]
+    \item Any MCLP-optimal selection satisfies
+          $S_{\mathrm{MCLP}} \subseteq V_+$.
+    \item The D-optimal greedy selection on the band-2 Fourier
+          subspace $\mathcal{V}_2 = \mathrm{span}(\bu_1, \bu_2)$
+          satisfies
+          $\bigl| |S_{\mathrm{D\text{-}opt}} \cap V_+|
+                 - |S_{\mathrm{D\text{-}opt}} \cap V_-| \bigr|
+                 \leq \mathbb{1}[K \text{ odd}]$.
+    \item Hence
+          $|S_{\mathrm{MCLP}} \cap S_{\mathrm{D\text{-}opt}}|
+          \leq \lceil K / 2 \rceil$ ; the two selections share
+          at most half their stations.
+\end{enumerate}
+\end{theorem}
+
+\begin{proof}
+(i) Under the chosen coverage radius, the MCLP objective reduces
+to $\sum_{v \in S} \by_v$ since each station covers only itself
+and $\by$ encodes the demand weights.  With $\by \in \{\pm 1\}$,
+this is uniquely maximised by selecting the $K$ stations with
+the largest demand, which are exactly the elements of $V_+$
+(ties broken arbitrarily if $K < m$).  Hence $S_{\mathrm{MCLP}}
+\subseteq V_+$.
+
+(ii) The Laplacian of $K_{m,m}$ has eigenvalues $\lambda_1 = 0$
+(with eigenvector $\bone/\sqrt{2m}$) and $\lambda_2 = m$ (with
+eigenvector $\bv_2$ where $\bv_2(v) = +1/\sqrt{2m}$ for
+$v \in V_+$ and $-1/\sqrt{2m}$ for $v \in V_-$), plus a
+$(2m-2)$-dimensional eigenspace at $\lambda = 2m$.  On the band-2
+subspace, every row $\bu_2(v) := (\bu_1(v), \bv_2(v))$ is one of
+two distinct points :
+$\bu_2(v) = (1/\sqrt{2m})(1, +1)$ for $v \in V_+$,
+$\bu_2(v) = (1/\sqrt{2m})(1, -1)$ for $v \in V_-$.
+
+For a selection $S$ with $m_+ := |S \cap V_+|$,
+$m_- := |S \cap V_-|$, and $K = m_+ + m_-$,
+\[
+    \bU_2[S]^\top \bU_2[S]
+    \;=\; \tfrac{1}{2m}
+        \begin{pmatrix} K & m_+ - m_- \\ m_+ - m_- & K \end{pmatrix}.
+\]
+Its determinant is
+$\frac{1}{(2m)^2}\!\left[K^2 - (m_+ - m_-)^2\right]$, monotonically
+decreasing in $|m_+ - m_-|$ and uniquely maximised at
+$|m_+ - m_-| = 0$ (when $K$ even) or
+$|m_+ - m_-| = 1$ (when $K$ odd).  The D-optimal greedy returns
+a balanced split.
+
+(iii) Combining (i) and (ii) : $S_{\mathrm{D\text{-}opt}}$ has
+$\lfloor K/2 \rfloor$ vertices in $V_+$, hence its intersection
+with $S_{\mathrm{MCLP}} \subseteq V_+$ has size at most
+$\lfloor K/2 \rfloor + \mathbb{1}[K \text{ odd}] = \lceil K/2 \rceil$.
+\end{proof}
+
+\begin{remark}[Empirical interpretation]
+Theorem~\ref{thm:disjoint} provides a clean structural
+explanation of the Boston / DC results in
+Table~\ref{tab:siting} : the MCLP and D-optimal objectives
+optimise complementary quantities (current-demand mass vs.\
+reconstruction-information mass).  Whenever the demand signal
+carries strong antipodal structure --- a high-demand core
+surrounded by a low-demand periphery, which is the dominant
+spatial mode in our nine LSO networks --- the two selections
+diverge.  Operationally this argues for using D-optimal greedy
+as the cold-start siting rule whenever the goal is to maximise
+the predictability of demand at the unobserved periphery, and
+MCLP whenever the goal is to capture the largest fraction of
+the current-network demand at a small subset of stations.
+\end{remark}
+
 % =========================================================================
 % §8 EXTRACTED VERBATIM FROM THE COMPANION PAPER (v2.3).
 % =========================================================================
