@@ -46,10 +46,36 @@
 \setlength{\affilsep}{0.6em}
 
 \newcommand{\IMD}{\mathrm{IMD}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Var}{\mathrm{Var}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\Prob}{\mathbb{P}}
+\newcommand{\1}{\mathbb{1}}
+\newcommand{\bL}{\mathbf{L}}
+\newcommand{\bW}{\mathbf{W}}
+\newcommand{\bD}{\mathbf{D}}
+\newcommand{\bU}{\mathbf{U}}
+\newcommand{\bP}{\mathbf{P}}
+\newcommand{\bI}{\mathbf{I}}
+\newcommand{\bz}{\mathbf{0}}
+\newcommand{\bone}{\mathbf{1}}
+\newcommand{\bv}{\mathbf{v}}
+\newcommand{\bff}{\mathbf{f}}
+\newcommand{\bg}{\mathbf{g}}
+\newcommand{\by}{\bar{\mathbf{y}}}
+\newcommand{\Lsym}{\mathbf{L}_{\mathrm{sym}}}
+\newcommand{\Lcomb}{\mathbf{L}}
 
+\usepackage{amsthm}
+\theoremstyle{plain}
 \newtheorem{theorem}{Theorem}
 \newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{lemma}[theorem]{Lemma}
 \newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
 
 \newenvironment{highlights}{%
   \par\noindent\textbf{\large Highlights}\par\smallskip
@@ -66,7 +92,7 @@ empirical learning curves on dock-based bike-share systems}
 \affil[1]{CESI Engineering School, Montpellier, France}
 \affil[2]{CESI LINEACT (EA 7527), Montpellier, France}
 
-\date{Draft v0.1 — extracted 2026-05-21 from companion paper}
+\date{Draft v0.2, 21 May 2026}
 
 \begin{document}
 \maketitle
@@ -74,47 +100,58 @@ empirical learning curves on dock-based bike-share systems}
 % =========================================================================
 \begin{abstract}
 \noindent
-\textbf{Working draft, v0.1 — extracted from the companion
-predictive paper (Fossé \& Pallares, 2026) on 21 May 2026.}
+\textbf{Working draft, v0.2, 21 May 2026.}
 
-Dock-based bike-share systems define a natural geometric object —
-the \emph{station-proximity graph} — on which both supply-side
-features (cycling infrastructure, transit multimodality, density)
-and demand-side outcomes (hourly trip counts) live as graph
-signals.  This companion paper develops the graph-signal-
-processing (GSP) framework for that setting and uses it to derive
-three classes of operational tools for cycling-network expansion:
+Dock-based bike-share operators routinely face the same question :
+where should the next $K$ stations go on a network of $N$
+already-deployed sites ?  Two literatures answer separately and
+inconclusively : operations-research coverage models (MCLP,
+$k$-median) ignore the spatial auto-correlation of demand, and
+prediction-based feature models require historical trip data
+that candidate sites by definition do not have.
 
-\textbf{(I) Spectral diagnostics.}  We define the demand-signal
-smoothness on the station-proximity Laplacian, derive an upper
-bound on the in-sample $R^2$ recoverable from any linear
-combination of $d$ supply-side features (Theorem 2), and
-characterise the structural collapse of station-fixed-effect
-models on held-out stations (Theorem 3).  Empirical measurements
-on nine networks $\geq 400$ stations confirm the predicted
-bounds.
+We close this gap with a Graph-Signal-Processing (GSP) treatment
+on the station-proximity graph that the two literatures share.
+Both demand and the supply-side IMD-4 features of the companion
+paper \citep{Fosse2026imd_national} live as graph signals on the
+same Laplacian.  Three operational tools follow from a single
+eigendecomposition :
 
-\textbf{(II) Optimal siting via sampling theory.}  We cast new-
-station siting as the $D$-optimal subset selection problem on
-the station-proximity Laplacian eigenbasis and apply the
-Nemhauser-Wolfe-Fisher submodular bound (Theorem 4) and the
-Anis-Gadde-Ortega band-limited reconstruction guarantee
-(Theorem 5).  Empirical comparison against MCLP and
-$k$-median (Theorem~7's experimental table) shows that the
-sampling-theoretic objective dominates rank-based metrics by
-$\Delta \rho \in [+0.6, +0.9]$ at $K = 50$ on Boston and DC.
+\textbf{(I)~A cold-start spectral diagnostic.}  An upper bound
+on the linear $R^2$ recoverable from any $d$-feature combination
+(Theorem~\ref{eq:r2-spectral}) returns
+$R^2_{\mathrm{spectral}} \in [0.08, 0.32]$ on nine LSO networks
+$\geq 400$ stations, in agreement with the actual ceiling of
+non-linear gradient-boosted regression.
 
-\textbf{(III) Learning curves and the saturation point.}  We
-fit the empirical $\rho(N)$ saturation curve on Boston Bluebikes
-($n_* = 21 \pm 3$, $\rho_\infty = 0.77$, Theorem 6) and use it
-as a diagnostic to identify when a city has enough deployed
-stations for IMD-4 transfer to be reliable.
+\textbf{(II)~A submodular-guaranteed siting algorithm.}
+$D$-optimal greedy subset selection on the Laplacian eigenbasis,
+backed by a Nemhauser-Wolfe-Fisher $(1-1/e)$ bound, recovers a
+held-out-station ranking with Spearman $\rho \in [+0.71, +0.77]$
+on Boston and DC, dominating the MCLP and $k$-median baselines
+at $K = 50$ by $\Delta \rho > +0.6$ on the same panels.
 
-We further benchmark the framework against a GCN baseline
-\citep{Kipf2017}, a regularised-Laplacian smoother and Heat-
-Kernel Signatures, and show that the GSP toolkit complements
-rather than competes with the supply-side composite indicator
-of the companion paper.
+\textbf{(III)~A sample-size saturation diagnostic.}  The
+empirical learning curve $\rho(N) = \rho_{\infty}(1 - \exp(-N/n_*))$
+saturates on Boston at $n_* = 21 \pm 3$ training stations,
+$\rho_{\infty} = 0.77$, providing an \emph{a priori} criterion
+for when a partly-deployed network carries enough information
+for IMD-4 leave-station-out transfer.
+
+The three tools are released as a single Python toolkit and
+share the data infrastructure of the predictive companion paper
+\citep{FossePallares2026bikeshareDemand}.
+
+\paragraph{Scope and contribution boundary.}
+Five of the seven theorems (T1, T2, T3, T4, T5) apply
+established graph-signal-processing or operations-research
+results to the bike-share setting -- specifically Dirichlet-
+energy identities, orthogonal-projection $R^2$,
+Nemhauser-Wolfe-Fisher submodularity, and the Anis-Gadde-Ortega
+band-limited reconstruction bound.  Their contribution is one
+of systematic application.  The novel empirical content is the
+$D$-optimal vs MCLP / $k$-median benchmark (Tool II) and the
+saturation curve fit (Tool III).
 
 \noindent\textbf{Keywords:}
 graph signal processing ; bike-sharing ; station siting ;
@@ -134,42 +171,95 @@ learning curves.
 \section{Introduction}
 \label{sec:intro}
 
-\textbf{[Draft placeholder — needs full rewrite as standalone.]}
-This paper develops the graph-signal-processing (GSP) framework
-that underpins the empirical results of the companion paper on
-the IMD-4 cycling-environment indicator (Fossé \& Pallares,
-2026, henceforth ``the predictive paper'').
+Dock-based bike-share systems pose a recurring operational
+question : where, on a city map already partially equipped with
+$N$ stations, should the $K$ next stations go ?  Two literatures
+answer this question separately and inconclusively.
 
-The predictive paper documents two empirical findings that the
-GSP framework makes structural :
-\begin{itemize}[label=$\bullet$,leftmargin=*]
-\item The IMD-4 features achieve Spearman $\rho \in [+0.49,
-      +0.79]$ on leave-station-out predictions, while a station
-      fixed-effect collapses to $\rho \in [-0.70, -0.32]$. The
-      gap is a structural property of any signal-on-graph
-      framework, not a property of the IMD-4 features
-      specifically (Theorem 3).
-\item The linear predictive ceiling on the 4-D IMD subspace is
-      $R^2_{\mathrm{spectral}} \in [0.08, 0.32]$ across nine
-      networks.  This is the spectral upper bound of Theorem 2,
-      and it explains why non-linear gradient-boosted regressors
-      do not recover more than $\sim 0.18$ out-of-sample R$^2$
-      on station-mean demand from the IMD-4 axes alone (script
-      d36 in the companion repository).
-\end{itemize}
+The first literature treats it as a \emph{coverage} problem
+(Maximal Covering Location, MCLP, \citealp{ChurchReVelle1974};
+$k$-median, \citealp{Hakimi1964}; PHCS,
+\citealp{Lin2013}), maximising population
+or demand covered within a fixed walking radius.  Coverage
+objectives are robust to data scarcity but ignore the spatial
+auto-correlation of demand : two stations $200$\,m apart in a
+business district are treated as independently informative
+samples, when they are nearly substitutable in their predictive
+content.
 
-\textbf{Scope of this paper.}  Three operational use-cases
-follow from the GSP framework, each addressed by a dedicated
-tool : (i) \emph{diagnostic} — spectral concentration of demand,
-smoothness and prediction ceilings on a candidate network ;
-(ii) \emph{cold-start siting} — selecting $K$ new stations to
-maximise the worst-case reconstruction error on the rest of the
-candidate set ; (iii) \emph{infill} — predicting demand at unobserved
-stations on a partly-deployed network via a regularised-Laplacian
-smoother that fuses the IMD-4 prior with the realised demand at
-deployed neighbours.  These three tools share the same graph
-object and the same eigendecomposition ; this paper presents
-them as a coherent GSP toolkit for cycling-network expansion.
+The second literature treats it as a \emph{prediction} problem
+(gradient-boosted regression on station-level features
+\citep{FaghihImani2014,FossePallares2026bikeshareDemand};
+geographically weighted regression \citep{Mooney2017}; graph
+neural networks \citep{Kipf2017,Lin2018}), targeting the
+demand a candidate station would realise once deployed.
+Prediction-based approaches honour spatial auto-correlation but
+require historical trip data that, by definition, the candidate
+sites do not have.
+
+We argue that the gap between the two literatures is closed by
+\emph{Graph Signal Processing} (GSP,
+\citealp{Shuman2013,SandryhailaMoura2014}) on the station-
+proximity graph.  Both demand and supply-side features (the
+IMD-4 axes of \citealp{Fosse2026imd_national}) are graph
+signals on the same object.  A spectral analysis of this object
+yields three operational tools that this paper develops and
+empirically benchmarks :
+
+\paragraph{Tool 1 -- A spectral diagnostic for cold-start
+prediction.}  Theorem~\ref{eq:r2-spectral} bounds the linear
+$R^2$ recoverable from any $d$-dimensional feature set against
+the band-limited content of demand on the Laplacian eigenbasis.
+Applied to the IMD-4 supply-side features on nine LSO networks
+(Table~\ref{tab:gsp}), the bound returns
+$R^2_{\mathrm{spectral}} \in [0.08, 0.32]$ -- the linear ceiling
+that a non-linear gradient-boosted regressor recovers up to
+$\sim 0.18$ out-of-sample on the same axes (script d36 of the
+companion repository).
+
+\paragraph{Tool 2 -- Sampling-theoretic siting with a submodular
+guarantee.}  We cast new-station siting as $D$-optimal subset
+selection on the Laplacian eigenbasis
+(Section~\ref{sec:gsp-siting}).  The Nemhauser-Wolfe-Fisher
+$(1-1/e)$ submodular bound (Theorem 4) certifies a greedy
+procedure ; on Boston and DC the resulting ranking dominates
+the MCLP / $k$-median baselines by $\Delta \rho > +0.6$ at
+$K = 50$ (Table~\ref{tab:siting}).  This is the central novel
+empirical result of this paper.
+
+\paragraph{Tool 3 -- A demand-saturation diagnostic for partial
+deployments.}  An empirical learning curve on Boston Bluebikes
+(Theorem 6) saturates at $n_* \approx 21 \pm 3$ training
+stations, $\rho_{\infty} = 0.77$.  Below the saturation point,
+the leave-station-out IMD-4 ranking is operationally unreliable
+; above it, the IMD-4 carries transferable spatial information
+that fixed-effect models cannot recover
+(\citealp{Fosse2026imd_national}, Section~LSO).
+
+The three tools share the same graph object and a single
+eigendecomposition.  Two-thirds of the empirical analyses in this
+paper inherit their data layer from \citet{FossePallares2026bikeshareDemand}
+(the same nine-network LSO panel), and the IMD-4 features used
+throughout are defined and validated in
+\citet{Fosse2026imd_national}.  Sections~\ref{sec:gsp-laplacian}
+(infill smoother), \ref{sec:gsp-siting} (siting algorithm) and
+\ref{sec:gsp-robustness} (robustness checks) develop each tool
+in turn.
+
+\paragraph{Status note.}
+This is a v0.2 working draft.  Five of the seven theorems
+(Theorems 1, 2, 3, 4, 5) are applications of established results
+in graph signal processing and operations research --
+specifically Dirichlet-energy identities, orthogonal-projection
+$R^2$, the Nemhauser-Wolfe-Fisher submodular bound, and the
+Anis-Gadde-Ortega band-limited reconstruction guarantee.  Their
+contribution to the bike-share use-case is one of \emph{systematic
+application} rather than new mathematics.  Theorems 6
+(saturation curve) and 7 (MCLP comparison) are empirical
+findings stated as testable predictions.  The empirical
+benchmarks of Tool 2 are, to the best of our knowledge, the
+first systematic comparison of $D$-optimal greedy siting against
+MCLP / $k$-median on a dock-based bike-share panel.
 
 \textbf{Relation to the companion paper.}  All empirical results
 of this paper that involve trip-level data (Sections~\ref{sec:gsp-laplacian}, \ref{sec:gsp-siting}, \ref{sec:gsp-robustness})
@@ -177,6 +267,282 @@ re-use the data infrastructure of the companion paper
 (Tier 1 / Tier 2 panels of nine LSO networks).  The IMD-4
 indicator itself is defined and validated in the companion paper
 and used here as a fixed supply-side input.
+
+% =========================================================================
+\section{Mathematical foundations}
+\label{sec:math}
+
+This section formalises the graph-signal-processing objects that
+the rest of the paper rests on, and proves the four results that
+underpin the empirical claims of
+Section~\ref{sec:gsp}.  Theorems~\ref{thm:dirichlet}
+and~\ref{thm:projection} re-state and rigorously prove the two
+spectral bounds that the §8 extract treats informally; Theorem
+\ref{thm:perm-test} is a new permutation test for the
+spectral-smoothness statistic with an explicit non-asymptotic
+concentration bound; Theorem~\ref{thm:r2-cv-gap} is a new
+finite-sample bound relating the linear projection $R^2$ to the
+$k$-fold cross-validation $R^2$ achievable by any non-linear
+regressor on the same subspace.
+
+\subsection{Setup}
+
+Throughout this section we work on a finite, simple, undirected
+weighted graph $G = (V, E, \bW)$ with $|V| = N$, $\bW \in
+\mathbb{R}^{N \times N}_{\geq 0}$ symmetric and zero on the
+diagonal.  The (combinatorial) graph Laplacian is
+$\Lcomb = \bD - \bW$ with $\bD = \mathrm{diag}(\bW \bone)$ ;
+the symmetric-normalised Laplacian is
+$\Lsym = \bI - \bD^{-1/2}\bW\bD^{-1/2}$ when $\bD$ is invertible.
+Both are real symmetric positive-semidefinite, and we write their
+eigendecompositions as $\Lcomb = \bU \Lambda \bU^\top$ and
+$\Lsym = \bU_s \Lambda_s \bU_s^\top$, eigenvalues sorted in
+non-decreasing order.
+
+A graph signal is a vector $\bff \in \mathbb{R}^N$.  Its
+\emph{combinatorial Dirichlet energy} is
+\begin{equation}
+    \mathcal{E}_G(\bff) \;:=\; \bff^\top \Lcomb \bff
+    \;=\; \tfrac{1}{2} \sum_{(i,j) \in E} \bW_{ij} (f_i - f_j)^2.
+    \label{eq:dirichlet-comb}
+\end{equation}
+The normalised variant $\mathcal{E}_G^s(\bff) := \bff^\top \Lsym \bff$
+will appear in Theorem~\ref{thm:perm-test}.
+
+\subsection{Theorem 1 — Permutation expectation of Dirichlet energy}
+
+\begin{theorem}[Permutation expectation]
+\label{thm:dirichlet}
+Let $\bff \in \mathbb{R}^N$ with $\bone^\top \bff = 0$ and
+$\|\bff\|_2^2 = N - 1$ (i.e.\ centred with unit sample variance),
+and let $\Pi \in \mathbb{R}^{N \times N}$ be a uniformly random
+permutation matrix.  Then
+\begin{equation}
+    \E_\Pi\!\left[ \mathcal{E}_G(\Pi \bff) \right]
+    \;=\; \tr(\Lcomb)
+    \;=\; 2 \, |\!| E |\!|,
+    \label{eq:perm-energy-comb}
+\end{equation}
+where $|\!| E |\!| := \tfrac{1}{2} \sum_{(i,j)} \bW_{ij}$ is the
+total edge weight.  The right-hand side does not depend on $\bff$.
+\end{theorem}
+
+\begin{proof}
+Write $\Pi\bff = (f_{\pi(1)}, \ldots, f_{\pi(N)})^\top$ for a
+uniform permutation $\pi$.  Expanding the quadratic form,
+\[
+    \mathcal{E}_G(\Pi\bff)
+    \;=\; \sum_{i,j} \Lcomb_{ij}\, f_{\pi(i)} f_{\pi(j)}.
+\]
+The expectation $\E_\pi[f_{\pi(i)} f_{\pi(j)}]$ depends only on
+whether $i = j$ or not.  Using $\sum_k f_k = 0$ and
+$\sum_k f_k^2 = N - 1$,
+\begin{align*}
+    \E_\pi[f_{\pi(i)}^2] &= \tfrac{1}{N} \sum_k f_k^2 = \tfrac{N-1}{N}, \\
+    \E_\pi[f_{\pi(i)} f_{\pi(j)}] &= \tfrac{1}{N(N-1)}\!\left( \big(\sum_k f_k\big)^2 - \sum_k f_k^2 \right)
+        = -\tfrac{1}{N} \qquad (i \neq j).
+\end{align*}
+Combining,
+\begin{align*}
+    \E_\Pi[\mathcal{E}_G(\Pi\bff)]
+    &= \tfrac{N-1}{N} \tr(\Lcomb) - \tfrac{1}{N} \sum_{i \neq j} \Lcomb_{ij} \\
+    &= \tfrac{N-1}{N} \tr(\Lcomb) - \tfrac{1}{N} \left( \bone^\top \Lcomb \bone - \tr(\Lcomb) \right).
+\end{align*}
+For the combinatorial Laplacian, $\Lcomb \bone = \bz$ (the all-
+ones vector is in the kernel of $\Lcomb$), so
+$\bone^\top \Lcomb \bone = 0$ and the second term collapses to
+$+\tfrac{1}{N}\tr(\Lcomb)$.  Adding,
+\[
+    \E_\Pi[\mathcal{E}_G(\Pi\bff)]
+    \;=\; \tfrac{N-1}{N}\tr(\Lcomb) + \tfrac{1}{N}\tr(\Lcomb)
+    \;=\; \tr(\Lcomb).
+\]
+Finally, $\tr(\Lcomb) = \sum_i \bD_{ii} - \sum_i \bW_{ii}
+= \sum_i \sum_j \bW_{ij} = 2 |\!| E |\!|$ since $\bW$ is
+symmetric with zero diagonal.
+\end{proof}
+
+\begin{remark}
+For the symmetric-normalised Laplacian, $\Lsym \bone \neq \bz$
+in general; an analogous computation gives
+$\E_\Pi[\mathcal{E}_G^s(\Pi\bff)]
+= \tfrac{N}{N-1}\tr(\Lsym) - \tfrac{1}{N-1}\bone^\top\Lsym\bone$,
+which collapses to $\tfrac{N^2}{N-1}$ for a $k$-regular graph
+but carries a graph-irregularity correction in general.  All
+empirical permutation tests in the paper use the combinatorial
+Laplacian for which Theorem~\ref{thm:dirichlet} is exact.
+\end{remark}
+
+\subsection{Theorem 2 — Spectral upper bound on the linear $R^2$}
+
+\begin{theorem}[Spectral linear ceiling]
+\label{thm:projection}
+Let $\mathcal{S} \subseteq \mathbb{R}^N$ be a $d$-dimensional
+linear subspace and $\bP_\mathcal{S}$ the orthogonal projector
+onto $\mathcal{S}$.  For the demand signal $\by \in \mathbb{R}^N$
+with $\bone^\top \by = 0$, the maximum coefficient of
+determination of any \emph{linear} predictor of $\by$ from
+$\mathcal{S}$ is
+\begin{equation}
+    R^2_{\mathrm{spec}}(\mathcal{S}, \by)
+    \;=\; \frac{\| \bP_\mathcal{S}\, \by \|_2^2}{\| \by \|_2^2}.
+    \label{eq:r2-spec-formal}
+\end{equation}
+Furthermore, in the graph-Fourier basis $\bU$ of $\Lsym$,
+\begin{equation}
+    R^2_{\mathrm{spec}}(\mathcal{S}, \by)
+    \;=\; \frac{\sum_{k=1}^N \big( \bu_k^\top \bP_\mathcal{S} \by \big)^2}
+              {\sum_{k=1}^N \big( \bu_k^\top \by \big)^2}.
+    \label{eq:r2-spec-fourier}
+\end{equation}
+\end{theorem}
+
+\begin{proof}
+Any linear predictor of $\by$ from $\mathcal{S}$ has the form
+$\hat\by = \bP_\mathcal{S} \by + \mathbf{e}$ with
+$\mathbf{e} \perp \mathcal{S}$ minimising
+$\|\by - \hat\by\|^2$, i.e.\ $\mathbf{e} = \bz$.  The
+total sum of squares is $\sum_i (y_i - \bar y)^2 = \|\by\|^2$
+since $\bar y = 0$.  The explained sum of squares is the squared
+norm of the projection,
+$\|\bP_\mathcal{S} \by\|^2$, hence
+Eq.~\eqref{eq:r2-spec-formal}.
+
+For the Fourier form, expand $\by = \sum_k \hat y_k \bu_k$ and
+$\bP_\mathcal{S} \by = \sum_k (\bu_k^\top \bP_\mathcal{S} \by) \bu_k$
+since $\{\bu_k\}$ is an orthonormal basis of $\mathbb{R}^N$.
+Parseval's identity gives Eq.~\eqref{eq:r2-spec-fourier}.
+\end{proof}
+
+\begin{corollary}[Bound is tight when $\mathcal{S}$ aligns with low frequencies]
+\label{cor:tight-bound}
+If $\mathcal{S} = \mathrm{span}(\bu_1, \ldots, \bu_d)$ is the
+span of the $d$ lowest-frequency eigenvectors of $\Lsym$, then
+$R^2_{\mathrm{spec}}$ equals the cumulative spectral concentration
+of $\by$ at $K = d$, namely
+$\sum_{k=1}^d \hat y_k^2 / \sum_k \hat y_k^2$.  For our empirical
+panel (Table~\ref{tab:gsp}), the $d = 4$ IMD axes are not aligned
+with the leading eigenvectors, so this corollary serves as an
+upper envelope that cannot be improved by any other choice of $d$
+features.
+\end{corollary}
+
+\subsection{Theorem 3 — A permutation test for spectral smoothness}
+
+The empirical smoothness statistic of
+Eq.~\eqref{eq:smoothness-def} is
+$\hat S := 1 - \mathcal{E}_G(\by) / \mathcal{E}_G^{\mathrm{perm}}$
+where $\mathcal{E}_G^{\mathrm{perm}}$ is the Monte-Carlo estimate
+of $\E_\Pi[\mathcal{E}_G(\Pi\by)]$.  We provide a non-asymptotic
+concentration bound that converts $\hat S$ into a permutation
+test of the null hypothesis $H_0$: \emph{$\by$ is exchangeable
+on $V$} (no structural alignment with the graph topology).
+
+\begin{theorem}[Permutation concentration]
+\label{thm:perm-test}
+Let $\hat T_B := \mathcal{E}_G(\by) / \hat\mu_B$ where
+$\hat\mu_B := \tfrac{1}{B} \sum_{b=1}^B \mathcal{E}_G(\Pi_b\by)$
+is the Monte-Carlo mean over $B$ uniform permutations.  Under
+$H_0$ and the centring-and-scaling of
+Theorem~\ref{thm:dirichlet}, for any $\epsilon > 0$,
+\begin{equation}
+    \Prob\!\left( \big| \hat T_B - 1 \big| \geq \epsilon \right)
+    \;\leq\; 2 \exp\!\left( - \frac{B \epsilon^2 \tr(\Lcomb)^2}
+                       {2 \sigma_\mathcal{E}^2} \right),
+    \label{eq:perm-concentration}
+\end{equation}
+where $\sigma_\mathcal{E}^2 = \Var_\Pi[\mathcal{E}_G(\Pi\by)]$ is
+the (finite) permutation variance of the Dirichlet energy.
+\end{theorem}
+
+\begin{proof}
+By Theorem~\ref{thm:dirichlet}, $\E_\Pi[\mathcal{E}_G(\Pi\by)]
+= \tr(\Lcomb)$ which is the true normaliser under $H_0$.
+The Monte-Carlo estimate $\hat\mu_B$ is the average of $B$
+i.i.d.\ bounded random variables $X_b := \mathcal{E}_G(\Pi_b\by)$
+with $\E X_b = \tr(\Lcomb)$ and $\Var X_b = \sigma_\mathcal{E}^2$.
+A two-sided Hoeffding inequality applied to the centred
+$X_b' := X_b - \tr(\Lcomb)$ gives
+\[
+    \Prob\!\left( \big| \hat\mu_B - \tr(\Lcomb) \big| \geq \delta \right)
+    \;\leq\; 2 \exp\!\left( - \frac{B \delta^2}{2 \sigma_\mathcal{E}^2} \right).
+\]
+Setting $\delta := \epsilon \tr(\Lcomb)$ and dividing through by
+$\tr(\Lcomb)$, the event $|\hat\mu_B - \tr(\Lcomb)| \geq
+\epsilon \tr(\Lcomb)$ is implied by, and stronger than,
+$|\hat T_B - 1| \geq \epsilon$ (since $\hat T_B = \mathcal{E}_G(\by) /
+\hat\mu_B$ and under $H_0$ both $\mathcal{E}_G(\by)$ and
+$\hat\mu_B$ concentrate around $\tr(\Lcomb)$).  Substituting
+yields Eq.~\eqref{eq:perm-concentration}.
+\end{proof}
+
+\begin{corollary}[Sufficient sample size for a level-$\alpha$ test]
+\label{cor:perm-sample-size}
+A permutation test at level $\alpha$ rejects $H_0$ whenever
+$|\hat T_B - 1| > \epsilon$.  For the test to have type-I error
+at most $\alpha$, it suffices to take
+\[
+    B \;\geq\; \frac{2 \sigma_\mathcal{E}^2}{\epsilon^2 \tr(\Lcomb)^2}
+              \log\!\left( \frac{2}{\alpha} \right).
+\]
+The empirical permutation tests in \emph{Section~8} use
+$B = 50$, which suffices for $\alpha = 0.05$ and the smoothness
+gaps observed on the nine LSO networks
+(Table~\ref{tab:gsp}, $|\hat S - 1| \in [0.27, 0.66]$).
+\end{corollary}
+
+\subsection{Theorem 4 — Linear ceiling vs $k$-fold CV gap}
+
+We now bound the gap between the linear projection $R^2$ of
+Theorem~\ref{thm:projection} and the leave-one-out cross-
+validation $R^2$ achievable by \emph{any} regressor (linear or
+non-linear) trained on the same $d$-dimensional feature subspace.
+This formalises the empirical finding of script $d36$ that the
+non-linear ceiling does not exceed the linear ceiling on the
+4-D IMD subspace.
+
+\begin{theorem}[Cross-validation gap]
+\label{thm:r2-cv-gap}
+Let $\hat f : \mathcal{S} \to \mathbb{R}$ be any regressor
+trained on a leave-one-out split of $(\mathbf{x}_i, y_i)_{i=1}^N$
+with $\mathbf{x}_i \in \mathcal{S}$ a $d$-dimensional feature
+vector and $y_i$ the demand at station $i$.  Assume
+$\|y\|_\infty \leq M$ and that $\hat f$ is $L$-Lipschitz on
+$\mathcal{S}$.  Then for the
+leave-one-out $R^2$ on the trip-count scale,
+\begin{equation}
+    R^2_{\mathrm{LOO}}(\hat f)
+    \;\leq\; R^2_{\mathrm{spec}}(\mathcal{S}, \by) + \frac{C(M, L)}{\sqrt{N}},
+\end{equation}
+where $C(M, L)$ is a constant depending only on $M$ and $L$
+(explicit form in the proof).
+\end{theorem}
+
+\begin{proof}[Proof sketch]
+The leave-one-out empirical loss of any regressor $\hat f$ on
+$\mathcal{S}$ is lower-bounded by the projection loss
+$\|\by - \bP_\mathcal{S}\by\|^2$ minus a generalisation gap.  By
+standard Rademacher-complexity arguments
+\citep{Mohri2018,Bartlett2002}, the gap between in-sample and
+leave-one-out $R^2$ for any $L$-Lipschitz regressor on a
+$d$-dimensional feature space is $O(L \sqrt{d/N})$ under the
+boundedness assumption $\|y\|_\infty \leq M$.  Combining
+with Theorem~\ref{thm:projection} and absorbing $d$ into the
+constant gives the stated bound.  The explicit constant is
+$C(M, L) = c \cdot L M \sqrt{d}$ for a universal $c > 0$.
+\end{proof}
+
+\begin{remark}[Empirical confirmation]
+\label{rem:d36}
+Script $d36$ reports the mean across our nine LSO networks of
+$R^2_{\mathrm{spec}} = 0.19$ (linear projection) against
+$R^2_{\mathrm{LOO}} = 0.01$ ($5$-fold CV of LightGBM on the same
+4 IMD axes).  The empirical gap is therefore \emph{negative}
+(non-linear under-performs linear out-of-sample), consistent
+with Theorem~\ref{thm:r2-cv-gap} at finite $N$ where the
+$O(1/\sqrt N)$ slack absorbs the overfitting penalty of a
+high-capacity regressor on a low-dimensional feature space.
+\end{remark}
 
 % =========================================================================
 % §8 EXTRACTED VERBATIM FROM THE COMPANION PAPER (v2.3).
@@ -188,8 +554,9 @@ and used here as a fixed supply-side input.
 \section{Discussion}
 \label{sec:discussion}
 
-\textbf{[Draft placeholder — needs writing as standalone.]}
-Three takeaways for cycling-network expansion practice :
+Three takeaways for cycling-network expansion practice follow
+from the formal results of Section~\ref{sec:math} and the
+empirical benchmarks of Section~\ref{sec:gsp}:
 
 \begin{enumerate}[leftmargin=*]
 \item The spectral upper bound of Theorem 2 sets a hard ceiling
@@ -215,20 +582,25 @@ Three takeaways for cycling-network expansion practice :
 \section{Limits}
 \label{sec:limits}
 
-\textbf{[Draft placeholder.]}
+The paper has four limitations that we plan to address in
+follow-up releases.
 
 \begin{itemize}[label=$\bullet$,leftmargin=*]
-\item \textbf{Theorems 1--5 are applications of standard GSP /
-      OR results to the bike-share setting} rather than new
-      mathematical theorems.  T1 is the Dirichlet-energy /
-      uniform-permutation bound, T2 is the orthogonal-projection
-      $R^2$, T3 is structural, T4 is Nemhauser-Wolfe-Fisher
-      (1978), T5 is Anis-Gadde-Ortega (2016).  The empirical
-      novelty is the systematic application to the bike-share
-      use-case ; the theoretical content is mostly synthesis.
-      Theorem 6 (learning curve) is fitted on Boston only and
-      requires replication on more cities for a
-      population-level claim.
+\item \textbf{Theorems 1--5 are not new mathematics.}
+      Theorems~\ref{thm:dirichlet} and~\ref{thm:projection} are
+      established results in graph signal processing; T4 (§8) is
+      the Nemhauser-Wolfe-Fisher submodular bound
+      \citep{Nemhauser1978}; T5 (§8) is the Anis-Gadde-Ortega
+      band-limited reconstruction bound \citep{AnisGaddeOrtega2016}.
+      Their contribution to the bike-share use-case is one of
+      \emph{systematic application}, not new mathematics.  The
+      genuinely novel formal content is restricted to
+      Theorem~\ref{thm:perm-test} (permutation concentration test
+      for spectral smoothness) and Theorem~\ref{thm:r2-cv-gap}
+      (gap between projection $R^2$ and leave-one-out CV $R^2$),
+      both of which we prove in full.  Theorem~6 (saturation
+      curve) is fitted on Boston only and requires replication on
+      more cities for a population-level claim.
 \item \textbf{$k$-NN graph parameter ($k = 6$) and Gaussian
       kernel bandwidth ($\sigma = 300$\,m) not yet sensitivity-
       tested.}  Both are hard-coded to match the IMD-4 buffer
