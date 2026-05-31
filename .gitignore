@@ -1,0 +1,26 @@
+# LaTeX build artefacts (keep .tex, .bib, figures and the compiled .pdf; drop the rest)
+*.aux
+*.log
+*.out
+*.bbl
+*.blg
+*.bcf
+*.run.xml
+*.synctex.gz
+*.toc
+*.fdb_latexmk
+*.fls
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
